@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir F:\\\\PROJECTS\\\\xhs_op)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('src/xhs_op/db.py'\\).read\\(\\)\\); ast.parse\\(open\\('src/xhs_op/config.py'\\).read\\(\\)\\); ast.parse\\(open\\('scripts/login.py'\\).read\\(\\)\\); print\\('syntax OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('src/xhs_op/db.py'\\).read\\(\\)\\); print\\('db.py OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('src/xhs_op/config.py'\\).read\\(\\)\\); print\\('config.py OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('scripts/login.py'\\).read\\(\\)\\); print\\('login.py OK'\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('src/xhs_op/sources/rss.py', encoding='utf-8'\\).read\\(\\)\\); print\\('syntax ok'\\)\")",
+      "PowerShell(python -c \"import streamlit as st; print\\('datetime_input:', hasattr\\(st, 'datetime_input'\\)\\); print\\('version:', st.__version__\\)\")",
+      "Bash(uv run *)",
+      "Bash(python -c \"import yaml; d=yaml.safe_load\\(open\\('data/feeds.yaml', encoding='utf-8'\\)\\); print\\('feeds:', len\\(d['feeds']\\)\\); [print\\(f['name'], f['category'], f['target_account']\\) for f in d['feeds']]\")",
+      "PowerShell(cd F:\\\\PROJECTS\\\\xhs_op; uv run python -m py_compile src/xhs_op/dashboard/app.py src/xhs_op/dashboard/seed_demo.py scripts/run_dashboard.py; echo \"exit=$LASTEXITCODE\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(r'F:\\\\PROJECTS\\\\xhs_op\\\\src\\\\xhs_op\\\\publish\\\\xhs_client.py', encoding='utf-8'\\).read\\(\\)\\); print\\('xhs_client OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(r'F:\\\\PROJECTS\\\\xhs_op\\\\src\\\\xhs_op\\\\publish\\\\playwright_fallback.py', encoding='utf-8'\\).read\\(\\)\\); print\\('playwright_fallback OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(r'F:\\\\PROJECTS\\\\xhs_op\\\\scripts\\\\smoke_publish.py', encoding='utf-8'\\).read\\(\\)\\); print\\('smoke_publish OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(r'F:\\\\PROJECTS\\\\xhs_op\\\\src\\\\xhs_op\\\\generate\\\\llm.py', encoding='utf-8'\\).read\\(\\)\\); print\\('llm.py OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(r'F:\\\\PROJECTS\\\\xhs_op\\\\src\\\\xhs_op\\\\generate\\\\image.py', encoding='utf-8'\\).read\\(\\)\\); print\\('image.py OK'\\)\")",
+      "Bash(python -c \"from xhs_op.generate import llm; import inspect; sig = inspect.signature\\(llm.complete\\); print\\('signature:', sig\\); print\\('persona kind:', sig.parameters['persona'].kind\\); print\\('user_msg kind:', sig.parameters['user_msg'].kind\\); print\\('model_hint kind:', sig.parameters['model_hint'].kind\\); print\\('extra_context kind:', sig.parameters['extra_context'].kind\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('src/xhs_op/sources/rss.py', encoding='utf-8'\\).read\\(\\)\\); print\\('rss.py: OK'\\)\")",
+      "Bash(python -c \"import yaml; d=yaml.safe_load\\(open\\('data/feeds.yaml', encoding='utf-8'\\)\\); print\\('feeds.yaml OK, feeds:', len\\(d['feeds']\\)\\)\")",
+      "Bash(python *)"
+    ]
+  }
+}

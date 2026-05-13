@@ -8,6 +8,7 @@ from typing import Any
 import streamlit as st
 from sqlmodel import select
 
+from xhs_op.config import get_settings
 from xhs_op.db import Comment, Draft, Idea, Metric, Post, get_session, init_db
 
 # Best-effort import of Task 4 LLM router; absence is non-fatal.
@@ -28,6 +29,15 @@ except Exception:
     _inspirer = None  # type: ignore
     _INSPIRER_AVAILABLE = False
 
+
+
+try:
+    from xhs_op.generate import image as _image  # type: ignore
+
+    _IMAGE_AVAILABLE = True
+except Exception:
+    _image = None  # type: ignore
+    _IMAGE_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +136,7 @@ def _account_filter(stmt, model_attr, account: str):  # type: ignore[no-untyped-
 # ---------- Tab 1: Queue ----------
 
 
-def _render_queue_tab(account: str) -> None:
+def _render_queue_tab(account: str, model_override: str | None) -> None:
     st.subheader("Pending review")
     with get_session() as session:
         stmt = select(Draft).where(Draft.status == "pending_review")
@@ -139,10 +149,10 @@ def _render_queue_tab(account: str) -> None:
         return
 
     for draft in drafts:
-        _render_draft_card(draft)
+        _render_draft_card(draft, model_override)
 
 
-def _render_draft_card(draft: DraftView) -> None:
+def _render_draft_card(draft: DraftView, model_override: str | None) -> None:
     """Render one editable draft card with action buttons."""
     key_prefix = f"draft-{draft.id}"
     with st.container(border=True):
@@ -230,7 +240,19 @@ def _render_draft_card(draft: DraftView) -> None:
             st.rerun()
 
         if regen:
-            _regenerate_text(draft, body_val)
+            _regenerate_text(draft, body_val, model_override)
+
+        with st.expander("🎨 Generate image"):
+            prompt = st.text_area(
+                "Image prompt",
+                value=f"XHS cover image for: {title_val}",
+                key=f"{key_prefix}-img-prompt",
+                height=80,
+            )
+            make_image = st.button("Generate pic", key=f"{key_prefix}-make-pic")
+            if make_image:
+                _generate_and_attach_image(draft.id, prompt)
+                st.rerun()
 
 
 def _fallback_datetime_input(value: datetime, key_prefix: str) -> datetime:
@@ -286,7 +308,7 @@ def _queue_image_regen(draft_id: int | None, idx: int, path: str) -> None:
     st.toast(f"Queued image regen for draft #{draft_id} (index {idx}).")
 
 
-def _regenerate_text(draft: DraftView, current_body: str) -> None:
+def _regenerate_text(draft: DraftView, current_body: str, model_override: str | None) -> None:
     """Best-effort call to Task 4 LLM router. Warn on failure, never crash."""
     if not _LLM_AVAILABLE or _llm is None:
         st.warning(
@@ -294,7 +316,11 @@ def _regenerate_text(draft: DraftView, current_body: str) -> None:
         )
         return
     try:
-        new_text = _llm.complete(persona=draft.persona, user_msg=current_body or draft.title)
+        new_text = _llm.complete(
+            persona=draft.persona,
+            user_msg=current_body or draft.title,
+            model_hint=model_override,
+        )
     except Exception as exc:  # noqa: BLE001
         st.warning(f"Text regen failed: {exc}")
         return
@@ -304,6 +330,33 @@ def _regenerate_text(draft: DraftView, current_body: str) -> None:
     with st.expander("Regenerated text — copy what you like"):
         st.write(new_text)
 
+
+
+
+def _generate_and_attach_image(draft_id: int | None, prompt: str) -> None:
+    if draft_id is None:
+        return
+    if not prompt.strip():
+        st.warning("Please enter an image prompt.")
+        return
+    if not _IMAGE_AVAILABLE or _image is None:
+        st.warning("xhs_op.generate.image is not importable yet. Image generation skipped.")
+        return
+    try:
+        new_path = _image.generate_image(prompt)
+    except Exception as exc:  # noqa: BLE001
+        st.warning(f"Image generation failed: {exc}")
+        return
+
+    with get_session() as session:
+        draft = session.get(Draft, draft_id)
+        if draft is None:
+            return
+        paths = list(draft.image_paths or [])
+        paths.append(new_path)
+        draft.image_paths = paths
+        session.add(draft)
+    st.success("Image generated and attached to this draft.")
 
 # ---------- Tab 2: Schedule ----------
 
@@ -595,6 +648,18 @@ def main() -> None:
         st.caption("Status flags")
         st.write(f"LLM router: {'✅' if _LLM_AVAILABLE else '⏳ Task 4'}")
         st.write(f"Inspirer: {'✅' if _INSPIRER_AVAILABLE else '⏳ Task 3'}")
+        st.write(f"Image gen: {'✅' if _IMAGE_AVAILABLE else '⏳ unavailable'}")
+        x_cookie_ok = __import__('pathlib').Path('data/cookies/x.json').exists()
+        settings = get_settings()
+        x_connected = x_cookie_ok and bool(settings.x_username)
+        st.write(f"X connected: {'✅ connected' if x_connected else '❌ not connected'}")
+        available_models = sorted(set(settings.model_routing.values()))
+        model_override = st.selectbox(
+            "Text model override",
+            options=["(auto)", *available_models],
+            index=0,
+            help="Pick a model here to override persona routing during text regeneration.",
+        )
         regen_q = st.session_state.get("regen_requests", [])
         st.write(f"Pending image regens this session: {len(regen_q)}")
 
@@ -603,7 +668,7 @@ def main() -> None:
     )
 
     with tab_queue:
-        _render_queue_tab(account)
+        _render_queue_tab(account, None if model_override == "(auto)" else model_override)
     with tab_schedule:
         _render_schedule_tab(account)
     with tab_inspire:

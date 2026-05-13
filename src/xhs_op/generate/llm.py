@@ -49,6 +49,17 @@ def _route_model(persona: str, model_hint: str | None) -> str:
     """Pick a model id for the given persona. `model_hint` always wins."""
     if model_hint:
         return model_hint
+    # Fast overrides for operators: env vars avoid code edits/redeploys when swapping models.
+    # Examples:
+    #   XHS_MODEL_STOCK_DIGEST=openai/gpt-5
+    #   XHS_DEFAULT_MODEL=lm_studio/local
+    env_key = f"XHS_MODEL_{persona.upper()}"
+    env_override = os.getenv(env_key, "").strip()
+    if env_override:
+        return env_override
+    global_override = os.getenv("XHS_DEFAULT_MODEL", "").strip()
+    if global_override:
+        return global_override
     settings = get_settings()
     routing = settings.model_routing
     if persona == "villa":
